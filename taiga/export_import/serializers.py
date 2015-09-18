@@ -494,6 +494,8 @@ class RolePointsExportSerializer(serializers.ModelSerializer):
 class MilestoneExportSerializer(WatcheableObjectModelSerializer):
     owner = UserRelatedField(required=False)
     modified_date = serializers.DateTimeField(required=False)
+    estimated_start = serializers.DateTimeField(required=False)
+    estimated_finish = serializers.DateTimeField(required=False)
 
     def __init__(self, *args, **kwargs):
         project = kwargs.pop('project', None)

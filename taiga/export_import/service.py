@@ -47,9 +47,44 @@ def add_errors(section, errors):
     else:
         _errors_log[section] = [errors]
 
+import json
 
-def project_to_dict(project):
-    return serializers.ProjectExportSerializer(project).data
+from taiga.base.api.fields import get_component
+
+def render_project(project, outfile):
+    serializer = serializers.ProjectExportSerializer(project)
+    outfile.write('{\n')
+
+    first_field = True
+    for field_name in serializer.fields.keys():
+        # Avoid writing "," in the last element
+        if not first_field:
+            outfile.write(",\n")
+            first_field = False
+
+        field = serializer.fields.get(field_name)
+        field.initialize(parent=serializer, field_name=field_name)
+
+        if field_name in ["wiki_pages", "user_stories", "tasks", "issues"]:
+            value = get_component(project, field_name)
+            outfile.write('"{}": [\n'.format(field_name))
+            first_item = True
+            for item in value.iterator():
+                # Avoid writing "," in the last element
+                if not first_item:
+                    outfile.write(",\n")
+                    first_item = False
+
+                dumped_value = json.dumps(field.to_native(item), indent=4)
+                outfile.write(dumped_value)
+
+            outfile.write(']')
+
+        else:
+            value = field.field_to_native(project, field_name)
+            outfile.write('"{}": {}'.format(field_name, json.dumps(value, indent=4)))
+
+    outfile.write('}\n')
 
 
 def store_project(data):
